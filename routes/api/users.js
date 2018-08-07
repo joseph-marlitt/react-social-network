@@ -6,6 +6,10 @@ const keys = require("../../config/keys");
 const jwt = require("jsonwebtoken");
 const passport = require("passport");
 
+//Load Input Validation
+const validateRegisterInput = require("../../validation/register");
+const validateLoginInput = require("../../validation/login");
+
 //Load User model
 const User = require("../../models/User");
 
@@ -18,6 +22,12 @@ router.get("/test", (req, res) => res.json({ msg: "Users Works" }));
 //@desc     Register User
 //@access   Public
 router.post("/register", (req, res) => {
+  const { errors, isValid } = validateRegisterInput(req.body);
+
+  if (!isValid) {
+    return res.status(400).json(errors);
+  }
+
   User.findOne({
     email: req.body.email
   }).then(user => {
@@ -55,6 +65,12 @@ router.post("/register", (req, res) => {
 //@desc     Log in User / Returning JSON web token
 //@access   Public
 router.post("/login", (req, res) => {
+  const { errors, isValid } = validateLoginInput(req.body);
+
+  if (!isValid) {
+    return res.status(400).json(errors);
+  }
+
   const email = req.body.email;
   const password = req.body.password;
 
@@ -63,7 +79,8 @@ router.post("/login", (req, res) => {
   User.findOne({ email }).then(user => {
     //Check for user
     if (!user) {
-      return res.status(404).json({ email: "User not found" });
+      errors.email = "User not found";
+      return res.status(404).json(errors);
     }
 
     //Check password
@@ -85,7 +102,8 @@ router.post("/login", (req, res) => {
           }
         );
       } else {
-        return res.status(400).json({ err: "Password incorrect" });
+        errors.password = "Password incorrect";
+        return res.status(400).json(errors);
       }
     });
   });
